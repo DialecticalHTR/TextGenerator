@@ -1,0 +1,9 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "text_generator"
+version = "0.0.1"
+dependencies = ["beautifulsoup4", "tsnorm"]
+description = ""
