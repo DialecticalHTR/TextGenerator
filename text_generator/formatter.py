@@ -1,7 +1,8 @@
 import re
 import unicodedata
 from string import *
-from pathlib import Path
+
+from .allowed import ALLOWED_SYMBOLS
 
 
 # Useful constants
@@ -28,10 +29,7 @@ class TranscriptionFormatter:
             from tsnorm import Normalizer
             TranscriptionFormatter._accentor = Normalizer(stress_mark=COMBINING_ACUTE, stress_mark_pos="after", stress_yo=True)
         
-    def format(self, text: str, add_accents=True, add_pauses=True, add_softness=True, add_yots=True) -> str:
-        if add_pauses:
-            text = self._add_pauses(text)
-        
+    def format(self, text: str, add_accents=True, add_pauses=True, add_softness=True, add_yots=True) -> str:        
         if add_accents:
             text = self._add_accents(text)
         if not text:
@@ -41,6 +39,9 @@ class TranscriptionFormatter:
             text = self._add_softness(text)
         if add_yots:
             text = self._add_yots(text)
+
+        if add_pauses:
+            text = self._add_pauses(text)
 
         text = ' '.join(text.split())
         return text
@@ -61,13 +62,11 @@ class TranscriptionFormatter:
         normalized = TranscriptionFormatter._decompose_acutes(text)
 
         # Filter all non-word symbols
-        words = normalized.split()
-        # alphabet = RUSSIAN_ALPHABET + ascii_letters + digits + '-'
-        # for word in normalized.split():
-        #     word = ''.join(filter(lambda c: c in alphabet, word))
-        #     if word:
-        #         words.add(word)
-        # words = list(words)
+        words = list()
+        for word in normalized.split():
+            word = ''.join(filter(lambda c: c in ALLOWED_SYMBOLS, word))
+            if word:
+                words.append(word)
 
         to_accent = " ".join(words)
         try:
@@ -96,7 +95,7 @@ class TranscriptionFormatter:
             {ord(c): ' / ' for c in ','}
         )
         
-        sentences = re.split('[\?\!\.]+', short_pauses)
+        sentences = re.split('[\?\!\.]+ ', short_pauses)
         sentences = [' '.join(sentence.split()) for sentence in sentences]
         sentences = [sentence.capitalize() for sentence in sentences]
 

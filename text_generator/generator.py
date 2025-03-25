@@ -1,13 +1,8 @@
 from .wiki import WikipediaFetcher
 from .formatter import TranscriptionFormatter
+from .allowed import ALLOWED_SYMBOLS
 
 import random
-
-
-ALLOWED_SYMBOLS = set(
-    " АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЬЫЪЭЮЯабвгдежзийклмнопрстуфхцчшщьыъэюя0123456789[].!\"'‿/j%(),-?:;"
-    + "\u0301\u0302\u0306\u0304\u0311"
-)
 
 
 def generate_text_chunks(
