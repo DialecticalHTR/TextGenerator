@@ -2,7 +2,7 @@ import re
 import unicodedata
 from string import *
 
-from .allowed import ALLOWED_SYMBOLS
+# from .allowed import ALLOWED_SYMBOLS
 
 
 # Useful constants
@@ -27,7 +27,7 @@ class TranscriptionFormatter:
     def __init__(self):
         if TranscriptionFormatter._accentor is None:
             from tsnorm import Normalizer
-            TranscriptionFormatter._accentor = Normalizer(stress_mark=COMBINING_ACUTE, stress_mark_pos="after", stress_yo=True)
+            TranscriptionFormatter._accentor = Normalizer(stress_mark=COMBINING_ACUTE, stress_mark_pos="after", stress_yo=True, stress_monosyllabic=True)
         
     def format(self, text: str, add_accents=True, add_pauses=True, add_softness=True, add_yots=True) -> str:        
         if add_accents:
@@ -61,19 +61,21 @@ class TranscriptionFormatter:
     def _add_accents(text: str) -> str:
         normalized = TranscriptionFormatter._decompose_acutes(text)
 
-        # Filter all non-word symbols
-        words = list()
-        for word in normalized.split():
-            word = ''.join(filter(lambda c: c in ALLOWED_SYMBOLS, word))
-            if word:
-                words.append(word)
+        text = TranscriptionFormatter._accentor(normalized)
 
-        to_accent = " ".join(words)
-        try:
-            accent_data = TranscriptionFormatter._accentor(to_accent)
-        except:
-            return ""
-        text = accent_data
+        # Filter all non-word symbols
+        # words = list()
+        # for word in normalized.split():
+        #     word = ''.join(filter(lambda c: c in ALLOWED_SYMBOLS, word))
+        #     if word:
+        #         words.append(word)
+
+        # to_accent = " ".join(words)
+        # try:
+        #     accent_data = TranscriptionFormatter._accentor(to_accent)
+        # except:
+        #     return ""
+        # text = accent_data
 
         return text
 
