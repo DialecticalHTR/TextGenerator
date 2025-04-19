@@ -173,3 +173,6 @@ cython_debug/
 # Annotation Exporter
 output
 input.json
+
+# WIP scripts
+scratches
