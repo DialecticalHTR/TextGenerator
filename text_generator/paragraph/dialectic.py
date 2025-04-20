@@ -279,7 +279,7 @@ class Parser:
         if self.current.type == _type:
             self.advance()
         else:
-            raise TypeError()
+            raise TypeError(f"Failed to consume token {_type}, current token is {self.current.type}")
     
     def match(self, types: list[TokenType]) -> bool:
         for _type in types:
@@ -292,10 +292,10 @@ class Parser:
         self._init(tokens)
         return self.text()
     
-    def text(self) -> Text:
+    def text(self, closer=TokenType.EOF) -> Text:
         text = Text()
 
-        while not self.match([TokenType.EOF, TokenType.CLOSE_PARENT, TokenType.CLOSE_QUOTE, TokenType.QUOTE]):
+        while not self.match([TokenType.EOF, closer]):
             sentence = self.sentence()
             text.sentences.append(sentence)
         
@@ -323,14 +323,14 @@ class Parser:
             match prev.type:
                 case TokenType.OPEN_PARENT:
                     before = prev.literal
-                    text = self.text()
+                    text = self.text(closer=TokenType.CLOSE_PARENT)
                     after = self.current.literal
 
                     self.consume(TokenType.CLOSE_PARENT)
                     content.append(SubText(text.sentences, before, after))
                 case TokenType.OPEN_QUOTE:
                     before = prev.literal
-                    text = self.text()
+                    text = self.text(closer=TokenType.CLOSE_QUOTE)
                     after = self.current.literal
                     
                     self.consume(TokenType.CLOSE_QUOTE)
@@ -339,7 +339,7 @@ class Parser:
                     self.quoted = True
 
                     before = prev.literal
-                    text = self.text()
+                    text = self.text(closer=TokenType.QUOTE)
                     after = self.current.literal
                     
                     self.consume(TokenType.QUOTE)
