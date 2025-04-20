@@ -1,5 +1,7 @@
 import random
 
+import tqdm
+
 from .wiki import WikipediaFetcher
 from .formatter import TranscriptionFormatter
 from .paragraph import DialecticParagraphProcessor
@@ -17,6 +19,7 @@ class TextGenerator:
     ):
         sentences = set()
 
+        progress = tqdm.tqdm(total=amount)
         while len(sentences) < amount:
             sentences_list = []
 
@@ -62,6 +65,8 @@ class TextGenerator:
                 sentences_list.append(sentence)
 
             sentences = sentences | set(sentences_list)
+            progress.update(len(sentences_list))
 
+        progress.close()
         sentences = list(sentences)[:amount]
         return sentences
