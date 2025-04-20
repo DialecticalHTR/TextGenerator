@@ -20,7 +20,16 @@ class TextGenerator:
         while len(sentences) < amount:
             sentences_list = []
 
-            page = self.fetcher.get_random_article()
+            retries = 3
+            while retries:
+                try:
+                    page = self.fetcher.get_random_article()
+                    break
+                except Exception as e:
+                    print(f"Exception: {e}, retries: {retries}")
+                    retries -= 1
+            else:
+                raise RuntimeError(f"Failed to fetch a page from Wikipedia {retries} times.")
 
             paragraphs = []
             for p in page.get_all_paragraphs():
@@ -28,6 +37,7 @@ class TextGenerator:
                     processed = self.processor.process(p)
                     paragraphs.append(processed)
                 except Exception as e:
+                    print(page.title)
                     print(f"Exception: {e}")
                     paragraphs.append(p)
             
