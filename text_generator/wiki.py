@@ -5,6 +5,8 @@ import unicodedata
 import requests
 from bs4 import BeautifulSoup, Tag
 
+from .rate_limit import RateLimiter
+
 
 @dataclasses.dataclass
 class Section:
@@ -36,10 +38,15 @@ class WikipediaFetcher:
     title_url = 'https://ru.wikipedia.org/w/api.php?origin=*&action=query&format=json&list=random&rnlimit=1&rnnamespace=0'
     article_url = 'https://ru.wikipedia.org/w/api.php?origin=*&action=parse&format=json&page={title}&prop=text'
 
+    def __init__(self, request_wait: float=1):
+        self.request_wait_time = request_wait
+        self.rate_limiter = RateLimiter(self.request_wait_time)
+
     def get_article(self, title) -> Page:
-        request = requests.post(self.article_url.format(title=title))
-        result = request.json()
-        html = result['parse']['text']['*']
+        with self.rate_limiter:
+            request = requests.post(self.article_url.format(title=title))
+            result = request.json()
+            html = result['parse']['text']['*']
 
         page = self._parse_page(html)
         page.title = title
@@ -53,9 +60,10 @@ class WikipediaFetcher:
         return ' '.join(self.get_random_article().get_all_paragraphs())
     
     def _get_random_title(self) -> str:
-        request = requests.post(self.title_url)
-        result = request.json()
-        title = result['query']['random'][0]['title']
+        with self.rate_limiter:
+            request = requests.post(self.title_url)
+            result = request.json()
+            title = result['query']['random'][0]['title']
 
         return title
 
@@ -94,7 +102,7 @@ class WikipediaFetcher:
             stack.append(section)
         
         return page
-    
+
     @staticmethod
     def _process_paragraph(paragraph) -> str:
         # Uncompress unicode characters
@@ -108,3 +116,4 @@ class WikipediaFetcher:
     @staticmethod
     def _filter_section(section: Section) -> bool:
         return section.title != 'Примечания'
+    
