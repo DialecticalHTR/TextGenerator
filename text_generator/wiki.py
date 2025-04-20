@@ -43,10 +43,9 @@ class WikipediaFetcher:
         self.rate_limiter = RateLimiter(self.request_wait_time)
 
     def get_article(self, title) -> Page:
-        with self.rate_limiter:
-            request = requests.post(self.article_url.format(title=title))
-            result = request.json()
-            html = result['parse']['text']['*']
+        request = self._send_request(self.article_url.format(title=title))
+        result = request.json()
+        html = result['parse']['text']['*']
 
         page = self._parse_page(html)
         page.title = title
@@ -59,11 +58,10 @@ class WikipediaFetcher:
     def get_random_text(self) -> str:
         return ' '.join(self.get_random_article().get_all_paragraphs())
     
-    def _get_random_title(self) -> str:
-        with self.rate_limiter:
-            request = requests.post(self.title_url)
-            result = request.json()
-            title = result['query']['random'][0]['title']
+    def _get_random_title(self) -> str:        
+        request = self._send_request(self.title_url)
+        result = request.json()
+        title = result['query']['random'][0]['title']
 
         return title
 
@@ -103,6 +101,13 @@ class WikipediaFetcher:
         
         return page
 
+    def _send_request(self, url: str):
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'}
+        with self.rate_limiter:
+            r = requests.post(url, headers=headers)
+        
+        return r
+
     @staticmethod
     def _process_paragraph(paragraph) -> str:
         # Uncompress unicode characters
@@ -116,4 +121,3 @@ class WikipediaFetcher:
     @staticmethod
     def _filter_section(section: Section) -> bool:
         return section.title != 'Примечания'
-    
