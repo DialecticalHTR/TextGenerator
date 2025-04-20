@@ -257,14 +257,17 @@ class Parser:
         self.tokens: list[Token] = None
 
         self.quoted: bool = False
+        self.closers: list[TokenType] = []
 
     def _init(self, tokens):
         self.position = 0
         self.tokens = tokens
 
         self.quoted = False
+        self.closers = []
 
     def advance(self):
+        # print(self.position, self.current)
         self.position += 1
     
     @property
@@ -292,13 +295,17 @@ class Parser:
         self._init(tokens)
         return self.text()
     
-    def text(self, closer=TokenType.EOF) -> Text:
+    def text(self) -> Text:
         text = Text()
 
-        while not self.match([TokenType.EOF, closer]):
+        tokens = [TokenType.EOF,]
+        if self.closers:
+            tokens.append(self.closers[-1])
+        
+        while not self.match(tokens):
             sentence = self.sentence()
             text.sentences.append(sentence)
-        
+
         self.position -= 1
         return text
     
@@ -315,42 +322,50 @@ class Parser:
         content = []
 
         while (
-            self.match([TokenType.WORD, TokenType.PUNCTUATION, TokenType.OPEN_PARENT, TokenType.OPEN_QUOTE]) or 
-            (not self.quoted and self.match([TokenType.QUOTE]))
+            self.current.type != TokenType.ENDING_PUNCTUATION and (not self.closers or self.current.type != self.closers[-1])
         ):
-            prev = self.previous
+            token = self.current
+            self.advance()
 
-            match prev.type:
+            match token.type:
                 case TokenType.OPEN_PARENT:
-                    before = prev.literal
-                    text = self.text(closer=TokenType.CLOSE_PARENT)
+                    self.closers.append(TokenType.CLOSE_PARENT)
+
+                    before = token.literal
+                    text = self.text()
                     after = self.current.literal
 
                     self.consume(TokenType.CLOSE_PARENT)
+                    self.closers.pop()
                     content.append(SubText(text.sentences, before, after))
                 case TokenType.OPEN_QUOTE:
-                    before = prev.literal
-                    text = self.text(closer=TokenType.CLOSE_QUOTE)
+                    self.closers.append(TokenType.CLOSE_QUOTE)
+                    
+                    before = token.literal
+                    text = self.text()
                     after = self.current.literal
                     
                     self.consume(TokenType.CLOSE_QUOTE)
+                    self.closers.pop()
                     content.append(SubText(text.sentences, before, after))
                 case TokenType.QUOTE:
                     self.quoted = True
+                    self.closers.append(TokenType.QUOTE)
 
-                    before = prev.literal
-                    text = self.text(closer=TokenType.QUOTE)
+                    before = token.literal
+                    text = self.text()
                     after = self.current.literal
                     
                     self.consume(TokenType.QUOTE)
+                    self.closers.pop()
                     content.append(SubText(text.sentences, before, after))
 
                     self.quoted = False
                 case TokenType.WORD:
-                    word = Word(prev.literal)
+                    word = Word(token.literal)
                     content.append(word)
-                case TokenType.PUNCTUATION | TokenType.QUOTE:
-                    punct = Punctuation(prev.literal)
+                case _:
+                    punct = Punctuation(token.literal)
                     content.append(punct)
         
         return content
