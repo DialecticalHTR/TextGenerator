@@ -35,7 +35,7 @@ class Page:
 
 
 class WikipediaFetcher:
-    title_url = 'https://ru.wikipedia.org/w/api.php?origin=*&action=query&format=json&list=random&rnlimit=1&rnnamespace=0'
+    title_url = 'https://ru.wikipedia.org/w/api.php?origin=*&action=query&format=json&list=random&rnlimit=1&rnnamespace=0&rnminsize=20000'
     article_url = 'https://ru.wikipedia.org/w/api.php?origin=*&action=parse&format=json&page={title}&prop=text'
 
     def __init__(self, request_wait: float=1):
