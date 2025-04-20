@@ -21,9 +21,16 @@ class TextGenerator:
             sentences_list = []
 
             page = self.fetcher.get_random_article()
-            paragraphs = [
-                self.processor.process(p) for p in page.get_all_paragraphs()
-            ]
+
+            paragraphs = []
+            for p in page.get_all_paragraphs():
+                try:
+                    processed = self.processor.process(p)
+                    paragraphs.append(processed)
+                except Exception as e:
+                    print(f"Exception: {e}")
+                    paragraphs.append(p)
+            
             text = ' '.join(paragraphs)
             text = self.formatter.format(text)
             
@@ -34,6 +41,7 @@ class TextGenerator:
                 sentence = " ".join(words[:max_words])
                 words = words[sentence_len:]
 
+                sentence = ''.join(filter(lambda s: s in Alphabet.allowed_symbols, sentence))
                 if not sentence:
                     continue
                 if not any(
