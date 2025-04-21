@@ -82,7 +82,8 @@ class TextGenerator:
                 sentences_list.append(sentence)
 
             sentences = sentences | set(sentences_list)
-            progress.update(len(sentences_list))
+            progress.n = len(sentences)
+            progress.refresh()
 
         progress.close()
         sentences = list(sentences)[:amount]
