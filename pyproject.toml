@@ -5,5 +5,5 @@ build-backend = "hatchling.build"
 [project]
 name = "text_generator"
 version = "0.0.1"
-dependencies = ["beautifulsoup4", "tsnorm"]
+dependencies = ["beautifulsoup4", "tsnorm", "tqdm"]
 description = ""

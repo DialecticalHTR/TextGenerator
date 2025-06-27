@@ -1,5 +1,7 @@
 import random
 
+import tqdm
+
 from .wiki import WikipediaFetcher
 from .formatter import TranscriptionFormatter
 from .paragraph import DialecticParagraphProcessor
@@ -12,15 +14,18 @@ class TextGenerator:
         self.formatter = TranscriptionFormatter()
         self.processor = DialecticParagraphProcessor()
 
+        self.max_retries = 3
+
     def generate_text_chunks(
         self, amount, max_word_len=40, min_words=2, max_words=4
     ):
         sentences = set()
 
+        progress = tqdm.tqdm(total=amount)
         while len(sentences) < amount:
             sentences_list = []
 
-            retries = 3
+            retries = self.max_retries
             while retries:
                 try:
                     page = self.fetcher.get_random_article()
@@ -29,7 +34,7 @@ class TextGenerator:
                     print(f"Exception: {e}, retries: {retries}")
                     retries -= 1
             else:
-                raise RuntimeError(f"Failed to fetch a page from Wikipedia {retries} times.")
+                raise RuntimeError(f"Failed to fetch a page from Wikipedia {self.max_retries} times.")
 
             paragraphs = []
             for p in page.get_all_paragraphs():
@@ -41,11 +46,26 @@ class TextGenerator:
                     print(f"Exception: {e}")
                     paragraphs.append(p)
             
-            text = ' '.join(paragraphs)
-            text = self.formatter.format(text)
-            
-            words = [word for word in text.split(" ") if len(word) < max_word_len]
+            words = []
 
+            start_index, end_index = 0, 0
+            while end_index < len(paragraphs):
+                text_length = 0
+
+                while (
+                    end_index < len(paragraphs) and 
+                    (text_length := text_length + len(paragraphs[end_index]) + (end_index - start_index > 0)) < 500_000
+                ):
+                    end_index += 1
+                
+                text = ' '.join(paragraphs[start_index:end_index])
+                text = self.formatter.format(text)
+                words.extend(
+                    word for word in text.split(" ") if len(word) < max_word_len
+                )
+                
+                start_index = end_index
+            
             while len(words) > max_words:
                 sentence_len = random.randint(min_words, max_words)
                 sentence = " ".join(words[:max_words])
@@ -62,6 +82,9 @@ class TextGenerator:
                 sentences_list.append(sentence)
 
             sentences = sentences | set(sentences_list)
+            progress.n = len(sentences)
+            progress.refresh()
 
+        progress.close()
         sentences = list(sentences)[:amount]
         return sentences
